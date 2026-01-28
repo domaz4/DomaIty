@@ -6,176 +6,323 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-    body {
-        margin: 0;
-        font-family: 'Segoe UI', sans-serif;
-        background: radial-gradient(circle at top, #0f2027, #000);
-        color: white;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-    }
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(rgba(0,0,0,.7),rgba(0,0,0,.7)), url("1.png") center/cover no-repeat;
+    color: white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
 
-    .card {
-        background: rgba(0,0,0,0.7);
-        border-radius: 20px;
-        padding: 30px;
-        width: 90%;
-        max-width: 420px;
-        box-shadow: 0 0 40px rgba(0,255,255,0.2);
-        text-align: center;
-        animation: fadeIn 0.6s ease;
-    }
+.card {
+    background: rgba(0,0,0,.8);
+    border-radius:20px;
+    padding:30px;
+    width:90%;
+    max-width:450px;
+    text-align:center;
+    box-shadow:0 0 40px rgba(0,255,255,.3);
+}
 
-    h1 {
-        margin-bottom: 10px;
-        font-size: 2.2em;
-        color: #00fff7;
-        letter-spacing: 2px;
-    }
+h1 { color:#00fff7; }
 
-    input, button {
-        width: 100%;
-        padding: 12px;
-        margin: 10px 0;
-        border-radius: 10px;
-        border: none;
-        font-size: 1em;
-    }
+input, select, button {
+    width:100%;
+    padding:12px;
+    margin:10px 0;
+    border-radius:10px;
+    border:none;
+    font-size:1em;
+}
 
-    input {
-        background: #111;
-        color: white;
-        outline: none;
-    }
+input, select { background:#111; color:white; }
 
-    button {
-        background: linear-gradient(135deg, #00fff7, #0077ff);
-        color: black;
-        font-weight: bold;
-        cursor: pointer;
-        transition: 0.3s;
-    }
+button {
+    background:linear-gradient(135deg,#00fff7,#0077ff);
+    font-weight:bold;
+    cursor:pointer;
+}
 
-    button:hover {
-        transform: scale(1.03);
-    }
-
-    .hidden {
-        display: none;
-    }
-
-    .role {
-        font-size: 1.4em;
-        margin-top: 15px;
-        white-space: pre-line;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: scale(0.95); }
-        to { opacity: 1; transform: scale(1); }
-    }
+.hidden { display:none; }
+.role { font-size:1.4em; white-space:pre-line; }
+.timer { color:#00fff7; font-size:1.2em; }
 </style>
 </head>
 
 <body>
 
-<div class="card" id="screen1">
+<!-- SCREEN 1 -->
+<div class="card" id="s1">
     <h1>domaIT</h1>
-    <p>How many players?</p>
-    <input type="number" id="playerCount" min="3" max="20">
+    <input type="number" id="count" min="3" max="20" placeholder="How many players?">
+    <select id="category">
+        <option value="food">🍔 Food</option>
+        <option value="jobs">💼 Jobs</option>
+        <option value="sports">⚽ Sports</option>
+        <option value="party">🎉 Party</option>
+    </select>
     <button onclick="setPlayers()">Next</button>
 </div>
 
-<div class="card hidden" id="screen2">
+<!-- SCREEN 2 -->
+<div class="card hidden" id="s2">
     <h1>Player Names</h1>
-    <div id="nameInputs"></div>
-    <button onclick="startGame()">Start Game</button>
+    <div id="names"></div>
+    <button onclick="startGame()">Start</button>
 </div>
 
-<div class="card hidden" id="screen3">
-    <h1 id="playerTurn"></h1>
-    <button onclick="reveal()">Reveal Role</button>
+<!-- SCREEN 3 -->
+<div class="card hidden" id="s3">
+    <div class="timer" id="timer">02:00</div>
+    <h1 id="turn"></h1>
+    <button onclick="reveal()">Reveal</button>
 </div>
 
-<div class="card hidden" id="screen4">
+<!-- SCREEN 4 -->
+<div class="card hidden" id="s4">
     <h1>Your Role</h1>
-    <div class="role" id="roleText"></div>
-    <button onclick="nextPlayer()">Hide & Pass</button>
+    <div class="role" id="role"></div>
+    <button onclick="next()">Hide & Pass</button>
+</div>
+
+<!-- SCREEN 5: Voting -->
+<div class="card hidden" id="s5">
+    <h1>🗳️ Vote for the Impostor</h1>
+    <select id="voteSelect"></select>
+    <button onclick="submitVote()">Vote</button>
+</div>
+
+<!-- SCREEN 6: Impostor Guess -->
+<div class="card hidden" id="s6">
+    <h1>IMPOSTOR REVEALED</h1>
+    <p id="impName"></p>
+    <input id="guess" placeholder="Guess the word">
+    <button onclick="checkGuess()">Guess</button>
 </div>
 
 <script>
-let players = [];
-let impostor = "";
-let current = 0;
+const words = {
+  food: [
+    "Pizza","Burger","Sushi","Pasta","Steak","Tacos","Kebab","Sandwich","Hotdog",
+    "Fried Chicken","Ramen","Noodles","Rice","Curry","Lasagna","Shawarma",
+    "Falafel","Burrito","Nachos","Pancakes","Waffles","Donut","Cake","Ice Cream",
+    "Chocolate","Cheese","Salad","Soup","Fish","Shrimp","Lobster","Crab",
+    "Eggs","Omelette","Fries","Mashed Potatoes","Pizza Slice","Cheeseburger",
+    "Milkshake","Smoothie","Yogurt","Apple","Banana","Orange","Grapes",
+    "Mango","Strawberry","Watermelon"
+  ],
 
-function setPlayers() {
-    let count = document.getElementById("playerCount").value;
-    if (count < 3) return alert("Minimum 3 players");
+  jobs: [
+    "Doctor","Engineer","Teacher","Pilot","Lawyer","Police Officer","Firefighter",
+    "Nurse","Dentist","Pharmacist","Architect","Electrician","Plumber","Mechanic",
+    "Carpenter","Welder","Scientist","Programmer","Web Developer","Game Developer",
+    "Cybersecurity Expert","Hacker","IT Support","Data Analyst","AI Engineer",
+    "Accountant","Banker","Financial Advisor","Economist","Business Owner",
+    "Manager","CEO","HR Manager","Marketing Specialist","Salesman","Real Estate Agent",
+    "Journalist","Reporter","News Anchor","Writer","Author","Editor","Translator",
+    "Graphic Designer","UI Designer","UX Designer","Animator","Video Editor",
+    "Photographer","Film Director","Actor","Actress","Producer","DJ","Music Producer",
+    "Singer","Rapper","Guitarist","Drummer","Pianist","Composer",
+    "Athlete","Coach","Personal Trainer","Gym Instructor","Yoga Teacher",
+    "Chef","Cook","Baker","Pastry Chef","Barista","Waiter","Waitress",
+    "Restaurant Manager","Hotel Manager","Tour Guide","Travel Agent",
+    "Flight Attendant","Taxi Driver","Bus Driver","Truck Driver",
+    "Delivery Driver","Uber Driver","Courier",
+    "Farmer","Gardener","Florist","Veterinarian","Zookeeper",
+    "Biologist","Chemist","Physicist","Astronomer",
+    "Professor","University Lecturer",
+    "Student","Researcher","Lab Assistant",
+    "Construction Worker","Civil Engineer","Site Manager",
+    "Security Guard","Bodyguard",
+    "Army Soldier","Navy Officer","Air Force Pilot",
+    "Customs Officer","Immigration Officer",
+    "Judge","Prosecutor","Public Defender",
+    "Social Worker","Psychologist","Therapist","Counselor",
+    "Life Coach","Motivational Speaker",
+    "Influencer","Content Creator","YouTuber","Streamer","Twitch Streamer",
+    "Esports Player","Game Tester",
+    "Mobile App Developer","Software Engineer","DevOps Engineer",
+    "Cloud Engineer","System Administrator",
+    "Database Administrator",
+    "SEO Specialist","Digital Marketer","Ads Manager",
+    "Community Manager","Discord Moderator","Server Admin",
+    "Product Manager","Project Manager","Scrum Master",
+    "Supply Chain Manager","Logistics Coordinator",
+    "Warehouse Worker","Inventory Manager",
+    "Quality Assurance Engineer",
+    "Robotics Engineer","Automation Engineer",
+    "Ethical Hacker","Penetration Tester",
+    "Blockchain Developer","Crypto Trader","NFT Artist",
+    "Economics Teacher","Math Teacher","Physics Teacher",
+    "School Principal","Vice Principal",
+    "Daycare Worker","Babysitter","Nanny",
+    "House Cleaner","Janitor","Maintenance Worker",
+    "Hotel Receptionist","Concierge",
+    "Interior Designer","Furniture Designer",
+    "Fashion Designer","Clothing Stylist",
+    "Makeup Artist","Hair Stylist","Barber",
+    "Tattoo Artist","Piercer",
+    "Event Planner","Wedding Planner",
+    "Party Organizer","Club Manager",
+    "Nightclub Bouncer",
+    "Casino Dealer","Poker Player",
+    "Professional Gambler",
+    "Stock Trader","Forex Trader",
+    "Investment Banker",
+    "Insurance Agent",
+    "Claims Adjuster",
+    "Risk Analyst",
+    "Compliance Officer",
+    "Government Clerk",
+    "City Planner",
+    "Urban Designer",
+    "Environmental Scientist",
+    "Climate Researcher",
+    "Renewable Energy Engineer",
+    "Solar Technician",
+    "Wind Turbine Technician"
+  ],
 
-    document.getElementById("screen1").classList.add("hidden");
-    document.getElementById("screen2").classList.remove("hidden");
+  sports: [
+    "Football","Basketball","Tennis","Boxing","Cricket","Baseball","Rugby",
+    "Volleyball","Handball","Badminton","Table Tennis","Squash",
+    "Hockey","Ice Hockey","Field Hockey",
+    "Swimming","Diving","Water Polo","Surfing","Windsurfing",
+    "Skateboarding","Rollerblading","Scootering",
+    "Cycling","Mountain Biking","BMX",
+    "Running","Marathon","Sprint","Hurdles",
+    "Gymnastics","Trampoline","Parkour",
+    "Weightlifting","Powerlifting","Bodybuilding","CrossFit",
+    "Wrestling","Judo","Karate","Taekwondo","Kung Fu","MMA","UFC",
+    "Fencing","Archery","Shooting",
+    "Golf","Mini Golf",
+    "Bowling","Darts","Billiards","Snooker","Pool",
+    "Formula 1","Karting","Rally Racing","MotoGP",
+    "Horse Riding","Show Jumping","Polo",
+    "Skiing","Snowboarding","Ice Skating","Figure Skating",
+    "Curling","Bobsleigh","Skeleton",
+    "Rock Climbing","Bouldering",
+    "Hiking","Mountaineering",
+    "Triathlon","Ironman",
+    "Rowing","Canoeing","Kayaking",
+    "Sailing","Yachting",
+    "Fishing","Sport Fishing",
+    "Hunting","Paintball","Airsoft",
+    "Laser Tag",
+    "Esports","Gaming","Speedrunning"
+  ],
 
-    let container = document.getElementById("nameInputs");
-    container.innerHTML = "";
+  party: [
+    "DJ","Dance","Lights","Drinks","Music","Bass","Speakers","Crowd",
+    "Nightclub","House Party","Rave","Festival","Concert","Birthday",
+    "Wedding","After Party","Pre-Party","VIP Area","Bottle Service",
+    "Confetti","Fireworks","Glow Sticks","Laser Lights",
+    "Smoke Machine","Disco Ball","Neon Lights","LED Panels",
+    "Karaoke","Sing Along","Dance Floor","Mosh Pit",
+    "Shot","Cocktail","Mocktail","Beer","Wine","Champagne",
+    "Snacks","Chips","Popcorn","Pizza Boxes",
+    "Costumes","Masks","Face Paint","Glow Paint",
+    "Party Games","Truth or Dare","Spin the Bottle",
+    "Music Playlist","Live Band","MC","Host",
+    "Security","Bouncer","Guest List",
+    "Photo Booth","Polaroid Camera",
+    "After Movie","Party Recap"
+  ]
+};
 
-    for (let i = 0; i < count; i++) {
-        container.innerHTML += `<input placeholder="Player ${i + 1} name">`;
-    }
+// game logic
+let players=[], impostor="", word="", index=0;
+let votes = {};
+let time=120, interval;
+
+function setPlayers(){
+    let c=document.getElementById('count').value;
+    if(c<3) return alert("Min 3 players");
+    document.getElementById('s1').classList.add("hidden");
+    document.getElementById('s2').classList.remove("hidden");
+    let namesDiv=document.getElementById('names');
+    namesDiv.innerHTML="";
+    for(let i=0;i<c;i++) namesDiv.innerHTML+=`<input placeholder="Player ${i+1}">`;
 }
 
-function startGame() {
-    let inputs = document.querySelectorAll("#nameInputs input");
-    players = [...inputs].map(i => i.value.trim()).filter(Boolean);
+function startGame(){
+    players=[...document.querySelectorAll("#names input")].map(i=>i.value.trim());
+    if(players.includes("")) return alert("Fill all names");
 
-    if (players.length < inputs.length) {
-        return alert("Fill all names");
-    }
+    impostor=players[Math.floor(Math.random()*players.length)];
+    let cat=document.getElementById('category').value;
+    let pool=words[cat];
+    word=pool[Math.floor(Math.random()*pool.length)];
 
-    impostor = players[Math.floor(Math.random() * players.length)];
-
-    document.getElementById("screen2").classList.add("hidden");
-    document.getElementById("screen3").classList.remove("hidden");
-
-    updateTurn();
+    document.getElementById('s2').classList.add("hidden");
+    document.getElementById('s3').classList.remove("hidden");
+    document.getElementById('turn').innerText=players[index]+"'s Turn";
+    startTimer();
 }
 
-function updateTurn() {
-    document.getElementById("playerTurn").innerText =
-        players[current] + "'s Turn";
+function reveal(){
+    document.getElementById('s3').classList.add("hidden");
+    document.getElementById('s4').classList.remove("hidden");
+    document.getElementById('role').innerText = players[index]===impostor
+        ? "🚨 YOU ARE THE IMPOSTOR 🚨\nTry to figure out the word"
+        : "Your Word:\n\n"+word;
 }
 
-function reveal() {
-    document.getElementById("screen3").classList.add("hidden");
-    document.getElementById("screen4").classList.remove("hidden");
-
-    let name = players[current];
-    let text = "";
-
-    if (name === impostor) {
-        text = "🚨 YOU ARE THE IMPOSTOR 🚨";
+function next(){
+    document.getElementById('s4').classList.add("hidden");
+    index++;
+    if(index>=players.length){
+        clearInterval(interval);
+        startVoting();
     } else {
-        // pick ONE random non-impostor name
-        let possibleNames = players.filter(p => p !== impostor);
-        let randomName = possibleNames[Math.floor(Math.random() * possibleNames.length)];
-        text = "Player Name:\n\n" + randomName;
+        document.getElementById('s3').classList.remove("hidden");
+        document.getElementById('turn').innerText=players[index]+"'s Turn";
     }
-
-    document.getElementById("roleText").innerText = text;
 }
 
-function nextPlayer() {
-    document.getElementById("screen4").classList.add("hidden");
-    current++;
+function startTimer(){
+    interval=setInterval(()=>{
+        time--;
+        let m=String(Math.floor(time/60)).padStart(2,"0");
+        let s=String(time%60).padStart(2,"0");
+        document.getElementById('timer').innerText=`${m}:${s}`;
+        if(time<=0) clearInterval(interval);
+    },1000);
+}
 
-    if (current >= players.length) {
-        alert("All players checked!\nGame Ready 🔥");
-        location.reload();
-    } else {
-        document.getElementById("screen3").classList.remove("hidden");
-        updateTurn();
-    }
+// Voting
+function startVoting(){
+    document.getElementById('s5').classList.remove("hidden");
+    let voteSelect=document.getElementById('voteSelect');
+    voteSelect.innerHTML="";
+    players.forEach(p=>{
+        voteSelect.innerHTML+=`<option>${p}</option>`;
+        votes[p]=0;
+    });
+}
+
+function submitVote(){
+    let voted=document.getElementById('voteSelect').value;
+    votes[voted]++;
+    let totalVotes = Object.values(votes).reduce((a,b)=>a+b,0);
+    if(totalVotes>=players.length){
+        document.getElementById('s5').classList.add("hidden");
+        document.getElementById('s6').classList.remove("hidden");
+        document.getElementById('impName').innerText="Impostor: "+impostor;
+    } else alert("Next player vote!");
+}
+
+// Impostor guess
+function checkGuess(){
+    let guess=document.getElementById('guess').value;
+    if(guess.toLowerCase()===word.toLowerCase())
+        alert("😈 IMPOSTOR WINS!");
+    else
+        alert("🎉 PLAYERS WIN!\nWord was: "+word);
+    location.reload();
 }
 </script>
 
