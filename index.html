@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>domaIT</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+    body {
+        margin: 0;
+        font-family: 'Segoe UI', sans-serif;
+        background: radial-gradient(circle at top, #0f2027, #000);
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+    }
+
+    .card {
+        background: rgba(0,0,0,0.7);
+        border-radius: 20px;
+        padding: 30px;
+        width: 90%;
+        max-width: 420px;
+        box-shadow: 0 0 40px rgba(0,255,255,0.2);
+        text-align: center;
+        animation: fadeIn 0.6s ease;
+    }
+
+    h1 {
+        margin-bottom: 10px;
+        font-size: 2.2em;
+        color: #00fff7;
+        letter-spacing: 2px;
+    }
+
+    input, button {
+        width: 100%;
+        padding: 12px;
+        margin: 10px 0;
+        border-radius: 10px;
+        border: none;
+        font-size: 1em;
+    }
+
+    input {
+        background: #111;
+        color: white;
+        outline: none;
+    }
+
+    button {
+        background: linear-gradient(135deg, #00fff7, #0077ff);
+        color: black;
+        font-weight: bold;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    button:hover {
+        transform: scale(1.03);
+    }
+
+    .hidden {
+        display: none;
+    }
+
+    .role {
+        font-size: 1.4em;
+        margin-top: 15px;
+        white-space: pre-line;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="card" id="screen1">
+    <h1>domaIT</h1>
+    <p>How many players?</p>
+    <input type="number" id="playerCount" min="3" max="20">
+    <button onclick="setPlayers()">Next</button>
+</div>
+
+<div class="card hidden" id="screen2">
+    <h1>Player Names</h1>
+    <div id="nameInputs"></div>
+    <button onclick="startGame()">Start Game</button>
+</div>
+
+<div class="card hidden" id="screen3">
+    <h1 id="playerTurn"></h1>
+    <button onclick="reveal()">Reveal Role</button>
+</div>
+
+<div class="card hidden" id="screen4">
+    <h1>Your Role</h1>
+    <div class="role" id="roleText"></div>
+    <button onclick="nextPlayer()">Hide & Pass</button>
+</div>
+
+<script>
+let players = [];
+let impostor = "";
+let current = 0;
+
+function setPlayers() {
+    let count = document.getElementById("playerCount").value;
+    if (count < 3) return alert("Minimum 3 players");
+
+    document.getElementById("screen1").classList.add("hidden");
+    document.getElementById("screen2").classList.remove("hidden");
+
+    let container = document.getElementById("nameInputs");
+    container.innerHTML = "";
+
+    for (let i = 0; i < count; i++) {
+        container.innerHTML += `<input placeholder="Player ${i + 1} name">`;
+    }
+}
+
+function startGame() {
+    let inputs = document.querySelectorAll("#nameInputs input");
+    players = [...inputs].map(i => i.value.trim()).filter(Boolean);
+
+    if (players.length < inputs.length) {
+        return alert("Fill all names");
+    }
+
+    impostor = players[Math.floor(Math.random() * players.length)];
+
+    document.getElementById("screen2").classList.add("hidden");
+    document.getElementById("screen3").classList.remove("hidden");
+
+    updateTurn();
+}
+
+function updateTurn() {
+    document.getElementById("playerTurn").innerText =
+        players[current] + "'s Turn";
+}
+
+function reveal() {
+    document.getElementById("screen3").classList.add("hidden");
+    document.getElementById("screen4").classList.remove("hidden");
+
+    let name = players[current];
+    let text = "";
+
+    if (name === impostor) {
+        text = "🚨 YOU ARE THE IMPOSTOR 🚨";
+    } else {
+        // pick ONE random non-impostor name
+        let possibleNames = players.filter(p => p !== impostor);
+        let randomName = possibleNames[Math.floor(Math.random() * possibleNames.length)];
+        text = "Player Name:\n\n" + randomName;
+    }
+
+    document.getElementById("roleText").innerText = text;
+}
+
+function nextPlayer() {
+    document.getElementById("screen4").classList.add("hidden");
+    current++;
+
+    if (current >= players.length) {
+        alert("All players checked!\nGame Ready 🔥");
+        location.reload();
+    } else {
+        document.getElementById("screen3").classList.remove("hidden");
+        updateTurn();
+    }
+}
+</script>
+
+</body>
+</html>
